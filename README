@@ -1,9 +1,17 @@
-This is a template engine for IME developers. You could start your IME engine
-from it.
+This is an input method (initially based off the ibus-tmpl template).
 
-Ibus-tmpl was released under GPLV2. We wish ibus engine developers would release
-new engines under open source license too, but we do not force it. We allow
-developers start your work from ibus-tmpl and swith to other license.
+You can use this input method as a short-cut to using character maps. e.g. you can type "GREEK ALPHA", and it will offer you the Unicode characters corresponding to `Greek capital letter alpha with tonos', `Greek capital letter alpha', `Greek small letter alpha' etc. It will also show you the unicode sequence.
 
-src - engine in c language
-engine - engine in python language
+It is hoped that with repeated usage, the user will remember the unicode sequence rather than the description of the characters.
+
+It is also hoped that this could be integrated with other input methods / keyboards. Currently iBus supports Ctrl+Shift+U <unicode sequence> to enter unicode characters. However, this only works as well as you can remember the unicode sequences. And character maps can be a pain, especially if you start to use a lot of Greek letters in your LibreOffice report (strictly speaking, you should use TeX. But, really...). If one could <Ctrl>+<Shift>+<U> <'> followed by a description, it might work a lot more nicely.
+
+This project stores data in a SQLite3 database.
+
+Problems:
+- Installation doesn't really work yet, for reasons I have yet to uncover
+- engine/engine.py still refers to my home directory, because SQLite3 on Python needs write-access (oh bother)
+- UnicodeData.txt is in English! This project cannot ever be localized, can it? (e.g. 阿拉法、俄梅戛 -- Chinese for `alpha' and `omega')
+- Data currently only comes from UnicodeData.txt. Unihan, CJK radicals etc. have not been included yet.
+- Needs usage frequency tracking!
+
