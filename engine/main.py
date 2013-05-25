@@ -27,7 +27,7 @@ import sys
 import getopt
 import locale
 
-from engine import EngineEnchant
+from engine import EngineUnicodeDb
 
 class IMApp:
     def __init__(self, exec_by_ibus):
@@ -55,7 +55,7 @@ class IMApp:
         self.__bus.connect("disconnected", self.__bus_disconnected_cb)
         self.__factory = IBus.Factory.new(self.__bus.get_connection())
         self.__factory.add_engine("enchant-python",
-                GObject.type_from_name("EngineEnchant"))
+                GObject.type_from_name("EngineUnicodeDb"))
         if exec_by_ibus:
             self.__bus.request_name("org.freedesktop.IBus.EnchantPython", 0)
         else:

@@ -18,32 +18,53 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import enchant
-
 from gi.repository import GLib
 from gi.repository import IBus
 from gi.repository import Pango
 
+import sqlite3
+import string
+
 keysyms = IBus
 
-class EngineEnchant(IBus.Engine):
-    __gtype_name__ = 'EngineEnchant'
-    __dict = enchant.Dict("en")
+class EngineUnicodeDb(IBus.Engine):
+    __gtype_name__ = 'EngineUnicodeDb'
+    
+    __literal_mode = True
 
     def __init__(self):
-        super(EngineEnchant, self).__init__()
+        super(EngineUnicodeDb, self).__init__()
         self.__is_invalidate = False
         self.__preedit_string = u""
         self.__lookup_table = IBus.LookupTable.new(10, 0, True, True)
         self.__prop_list = IBus.PropList()
         self.__prop_list.append(IBus.Property(key="test", icon="ibus-local"))
-        print "Create EngineEnchant OK"
+        # initialize sqlite
+        try:
+            self.__dbconn = sqlite3.connect('/home/daniel/ibus-tmpl/data/char_db.s3')
+        except sqlite3.OpeationalError:
+            self.__dbconn = None
+        print "Create EngineUnicodeDb OK"
 
     def do_process_key_event(self, keyval, keycode, state):
         print "process_key_event(%04x, %04x, %04x)" % (keyval, keycode, state)
         # ignore key release events
         is_press = ((state & IBus.ModifierType.RELEASE_MASK) == 0)
         if not is_press:
+            return False
+        
+        ## todo -- literal mode needs fixing -- must not activate when other keys
+        ## have also been activated.
+        ## even better -- we can activate when...
+        if keyval == keysyms.Shift_L or \
+            keyval == keysyms.Shift_R:
+            self.__literal_mode = not self.__literal_mode
+            if self.__preedit_string:
+                self.__invalidate()
+                self.__lookup_table.clear()
+            return True
+        
+        if self.__literal_mode:
             return False
 
         if self.__preedit_string:
@@ -58,37 +79,39 @@ class EngineEnchant(IBus.Engine):
                 self.__preedit_string = self.__preedit_string[:-1]
                 self.__invalidate()
                 return True
-            elif keyval == keysyms.space:
-                if self.__lookup_table.get_number_of_candidates() > 0:
-                    self.__commit_string(self.__lookup_table.get_current_candidate().text)
-                else:
-                    self.__commit_string(self.__preedit_string)
-                return False
+#            elif keyval == keysyms.space:
+#                if self.__lookup_table.get_number_of_candidates() > 0:
+#                    self.__commit_string(self.__lookup_table.get_current_candidate().text)
+#                else:
+#                    self.__commit_string(self.__preedit_string)
+#                return False
             elif keyval >= 49 and keyval <= 57:
                 #keyval >= keysyms._1 and keyval <= keysyms._9
-                index = keyval - keysyms._1
-                candidates = self.__lookup_table.get_canidates_in_current_page()
-                if index >= len(candidates):
+                index = keyval - 49 #keysyms._1
+                length = self.__lookup_table.get_number_of_candidates()
+                if index >= length:
                     return False
-                candidate = candidates[index].text
-                self.__commit_string(candidate)
+                candidate = self.__lookup_table.get_candidate(self.__lookup_table.cursor_pos + index)
+                # commit only the first character
+                self.__commit_string(candidate.text.decode('utf-8')[0].encode('utf-8'))
                 return True
             elif keyval == keysyms.Page_Up or keyval == keysyms.KP_Page_Up:
-                self.page_up()
+                self.do_page_up()
                 return True
             elif keyval == keysyms.Page_Down or keyval == keysyms.KP_Page_Down:
-                self.page_down()
+                self.do_page_down()
                 return True
             elif keyval == keysyms.Up:
-                self.cursor_up()
+                self.do_cursor_up()
                 return True
             elif keyval == keysyms.Down:
-                self.cursor_down()
+                self.do_cursor_down()
                 return True
             elif keyval == keysyms.Left or keyval == keysyms.Right:
                 return True
         if keyval in xrange(keysyms.a, keysyms.z + 1) or \
-            keyval in xrange(keysyms.A, keysyms.Z + 1):
+            keyval in xrange(keysyms.A, keysyms.Z + 1) or \
+            keyval == keysyms.space:
             if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK) == 0:
                 self.__preedit_string += unichr(keyval)
                 self.__invalidate()
@@ -108,25 +131,45 @@ class EngineEnchant(IBus.Engine):
 
     def do_page_up(self):
         if self.__lookup_table.page_up():
-            self.page_up_lookup_table()
+            print "wait i page up"
+            print self.__lookup_table.page_size
+            print self.__pos
+            
+            self.__pos = max( self.__pos - self.__lookup_table.page_size, 0) 
+            self.__lookup_table.clear()
+            
+            for candidate in self.__candidates[self.__pos: self.__pos + self.__lookup_table.page_size ]:
+                self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
+#            self.page_down_lookup_table()
+            self.__update_lookup_table()
             return True
         return False
 
     def do_page_down(self):
         if self.__lookup_table.page_down():
-            self.page_down_lookup_table()
+            print "wait i page down"
+            print self.__lookup_table.page_size
+            print self.__pos
+            
+            self.__pos = min(self.__pos + self.__lookup_table.page_size, len(self.__candidates) / self.__lookup_table.page_size)
+            self.__lookup_table.clear()
+            
+            for candidate in self.__candidates[self.__pos: self.__pos + self.__lookup_table.page_size ]:
+                self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
+#            self.page_down_lookup_table()
+            self.__update_lookup_table()
             return True
         return False
 
     def do_cursor_up(self):
         if self.__lookup_table.cursor_up():
-            self.cursor_up_lookup_table()
+#            self.cursor_up_lookup_table()
             return True
         return False
 
     def do_cursor_down(self):
         if self.__lookup_table.cursor_down():
-            self.cursor_down_lookup_table()
+#            self.cursor_down_lookup_table()
             return True
         return False
 
@@ -134,17 +177,40 @@ class EngineEnchant(IBus.Engine):
         self.commit_text(IBus.Text.new_from_string(text))
         self.__preedit_string = u""
         self.__update()
-
+        
+    __candidates = []
+    __pos = 0
+        
     def __update(self):
         preedit_len = len(self.__preedit_string)
         attrs = IBus.AttrList()
         self.__lookup_table.clear()
+        self.__pos = 0
+        self.__candidates=[]
         if preedit_len > 0:
-            if not self.__dict.check(self.__preedit_string):
-                attrs.append(IBus.Attribute.new(IBus.AttrType.FOREGROUND,
-                        0xff0000, 0, preedit_len))
-                for text in self.__dict.suggest(self.__preedit_string):
-                    self.__lookup_table.append_candidate(IBus.Text.new_from_string(text))
+            words = string.split( self.__preedit_string.upper().replace('\'', '\'\''), ' ')
+            subqueries = [];
+            query = 'SELECT character_desc.character, desc FROM character_desc INNER JOIN ('
+            
+            for word in words:
+                subqueries += [ 'SELECT character FROM character_word WHERE word = \'' + word + '\'' ]
+            
+            query += string.join( subqueries, ' INTERSECT ')
+            query += ')  AS chrs ON character_desc.character = chrs.character';
+            
+            print query;
+        
+            cur = self.__dbconn.cursor();
+            cur.execute(query)
+            
+            data = cur.fetchone();
+            while (data != None):
+                self.__candidates += [ unichr(int(data[0], 16)) + " - \\u" + data[0] + " - " + data[1] ]
+                data = cur.fetchone()
+            
+            for candidate in self.__candidates[0:10]:
+                self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
+                
         text = IBus.Text.new_from_string(self.__preedit_string)
         text.set_attributes(attrs)
         self.update_auxiliary_text(text, preedit_len > 0)

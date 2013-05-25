@@ -15,7 +15,6 @@ BuildRequires:  gettext-devel
 BuildRequires:  python
 
 Requires:   ibus
-Requires:   python-enchant
 
 %description
 IBus template project.
