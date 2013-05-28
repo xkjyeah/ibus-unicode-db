@@ -1,5 +1,5 @@
 # vim:set noet ts=4:
-#
+#_
 # ibus-tmpl - The Input Bus template project
 #
 # Copyright (c) 2007-2012 Peng Huang <shawn.p.huang@gmail.com>
@@ -21,6 +21,7 @@
 engine_enchant_PYTHON = \
 	engine.py \
 	main.py \
+	dataparse.py \
 	$(NULL)
 engine_enchantdir = $(datadir)/ibus-tmpl
 

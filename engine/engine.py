@@ -22,8 +22,10 @@ from gi.repository import GLib
 from gi.repository import IBus
 from gi.repository import Pango
 
-import sqlite3
 import string
+import stat
+
+from dataparse import DataParse
 
 keysyms = IBus
 
@@ -40,15 +42,14 @@ class EngineUnicodeDb(IBus.Engine):
         self.__lookup_table = IBus.LookupTable.new(10, 0, True, True)
         self.__prop_list = IBus.PropList()
         self.__prop_list.append(IBus.Property(key="test", icon="ibus-local"))
-        # initialize sqlite
-        try:
-            self.__dbconn = sqlite3.connect('/home/daniel/ibus-tmpl/data/char_db.s3')
-        except sqlite3.OpeationalError:
-            self.__dbconn = None
+        
+        # initialize mmap
+        self.__data = DataParse()
+        
         print "Create EngineUnicodeDb OK"
 
     def do_process_key_event(self, keyval, keycode, state):
-        print "process_key_event(%04x, %04x, %04x)" % (keyval, keycode, state)
+#        print "process_key_event(%04x, %04x, %04x)" % (keyval, keycode, state)
         # ignore key release events
         is_press = ((state & IBus.ModifierType.RELEASE_MASK) == 0)
         if not is_press:
@@ -239,6 +240,7 @@ class EngineUnicodeDb(IBus.Engine):
         self.commit_text(IBus.Text.new_from_string(text))
         self.__preedit_string = u""
         self.__update()
+        self.__state = 0
         
     __candidates = []
     __pos = 0
@@ -251,42 +253,16 @@ class EngineUnicodeDb(IBus.Engine):
         self.__candidates=[]
         
         if preedit_len > 2 and self.__state == 2:
-            words = string.split( self.__preedit_string[2:].upper().replace('\'', '\'\''), ' ')
+            words = string.split( self.__preedit_string[2:].strip().upper().replace('\'', '\'\''), ' ')
             
-            ## intersection of exact word matches
-            subqueries = [];
-            query = 'SELECT character_desc.character, desc FROM character_desc INNER JOIN ( select * from ('
+            (cands, fuz_cands) = self.__data.find_candidates(words)
+            sort_func = lambda x: int(x, 16)
+            candidate_codes = sorted(list(cands), key=sort_func) + \
+                            sorted(list(fuz_cands), key=sort_func)
             
-            for word in words:
-                subq = 'SELECT character FROM character_word WHERE word = \'' + word + '\'';
-                subqueries += [ subq ]
-           
-            query += string.join( subqueries, ' INTERSECT ')
-            
-            ## intersection of UNION matches
-            subqueries = [];
-            for word in words:
-                if len(word) >= 3: # allow for fuzzy matching
-                    subq = 'SELECT character FROM character_word WHERE word LIKE \'' + word + '%\'';
-                    subqueries += [ subq ]
-                else:
-                    subq = 'SELECT character FROM character_word WHERE word = \'' + word + '\'';
-                    subqueries += [ subq ]
-            
-            if len(subqueries) > 0:
-                query += ')  UNION select * from (' + string.join( subqueries, ' INTERSECT ')
-            
-            query += ')) AS chrs ON character_desc.character = chrs.character';
-            
-            print query;
-        
-            cur = self.__dbconn.cursor();
-            cur.execute(query)
-            
-            data = cur.fetchone();
-            while (data != None):
-                self.__candidates += [ unichr(int(data[0], 16)) + " - \\u" + data[0] + " - " + data[1] ]
-                data = cur.fetchone()
+            for code in candidate_codes:
+                self.__candidates += [ unichr(int(code, 16)) + " - \\u" + code + \
+                    " - " + self.__data.find_description(code) ]
             
             for candidate in self.__candidates[0:10]:
                 self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
@@ -326,4 +302,5 @@ class EngineUnicodeDb(IBus.Engine):
 
     def do_property_activate(self, prop_name):
         print "PropertyActivate(%s)" % prop_name
-
+        
+        
