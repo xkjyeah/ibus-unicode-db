@@ -30,7 +30,8 @@ keysyms = IBus
 class EngineUnicodeDb(IBus.Engine):
     __gtype_name__ = 'EngineUnicodeDb'
     
-    __literal_mode = True
+    
+    __state = 0   # 0 -- literal mode, 1 -- ambiguous mode, 2 -- normal mode, 3 -- hex mode
 
     def __init__(self):
         super(EngineUnicodeDb, self).__init__()
@@ -55,28 +56,88 @@ class EngineUnicodeDb(IBus.Engine):
         
         ## todo -- literal mode needs fixing -- must not activate when other keys
         ## have also been activated.
-        ## even better -- we can activate when...
-        if keyval == keysyms.Shift_L or \
-            keyval == keysyms.Shift_R:
-            self.__literal_mode = not self.__literal_mode
-            if self.__preedit_string:
-                self.__invalidate()
-                self.__lookup_table.clear()
-            return True
-        
-        if self.__literal_mode:
+        ## even better -- we can activate on... Ctrl+Shift+U
+        if self.__state == 0:
+            if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.SHIFT_MASK) != 0 and \
+                keyval == keysyms.u or keyval == keysyms.U:
+                self.__preedit_string = 'u'
+                self.__state = 1        # ambiguous hex/desc mode
+                self.__update()
+                return True
             return False
-
+        elif self.__state == 1 and keyval == keysyms.apostrophe: # transition to description
+            ## TODO: preedit string should show: u'
+            self.__preedit_string += '\''
+            self.__state = 2
+            self.__update()
+            return True
+        elif self.__state == 1 or self.__state == 3:
+            ## TODO: handle the hex state
+            if  state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK) != 0 and \
+                (keyval >= keysyms.a and keyval <= keysyms.f) or \
+                (keyval >= keysyms.A and keyval <= keysyms.F) or \
+                (keyval >= 48 and keyval <= 57):  # transition to confirmed hex state
+                self.__state = 3
+            return self.handle_hex_state( keyval, state )
+        elif self.__state == 2: # description state
+            return self.handle_desc_state( keyval, state )
+            
+        return False
+            
+    def handle_hex_state(self, keyval, state):
+    
+        if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK) != 0:
+            return False
+        
+        if keyval == keysyms.Escape:
+            self.__preedit_string = u""
+            self.__state = 0
+            self.__update()
+            return True
+        elif keyval == keysyms.BackSpace:
+            self.__preedit_string = self.__preedit_string[:-1]
+            self.__update()
+            if len(self.__preedit_string) == 0:
+                self.__state = 0
+            return True  
+        elif keyval == keysyms.Return or \
+            keyval == keysyms.space: # commit the character
+            self.__state = 0
+            self.__commit_string( unichr(int(self.__preedit_string[1:], 16)) )
+            self.__preedit_string = u''
+            self.__update()
+            return True
+        elif (keyval >= keysyms.a and keyval <= keysyms.f) or \
+            (keyval >= keysyms.A and keyval <= keysyms.F) or \
+            (keyval >= 48 and keyval <= 57): # hex char
+            
+            # if passed as a control sequence e.g. Ctrl + F
+            if len(self.__preedit_string) > 8:
+                pass
+            else:
+                self.__preedit_string += chr(keyval)            
+                self.__update()
+            
+            return True            
+        
+        return False
+    
+    def handle_desc_state(self, keyval, state):
         if self.__preedit_string:
             if keyval == keysyms.Return:
+                self.__state = 0
                 self.__commit_string(self.__preedit_string)
                 return True
             elif keyval == keysyms.Escape:
                 self.__preedit_string = u""
+                self.__state = 0
                 self.__update()
                 return True
             elif keyval == keysyms.BackSpace:
                 self.__preedit_string = self.__preedit_string[:-1]
+                if len(self.__preedit_string) < 2:
+                    self.__preedit_string = u''
+                    self.__state = 0
                 self.__invalidate()
                 return True
 #            elif keyval == keysyms.space:
@@ -93,6 +154,7 @@ class EngineUnicodeDb(IBus.Engine):
                     return False
                 candidate = self.__lookup_table.get_candidate(self.__lookup_table.cursor_pos + index)
                 # commit only the first character
+                self.__state = 0
                 self.__commit_string(candidate.text.decode('utf-8')[0].encode('utf-8'))
                 return True
             elif keyval == keysyms.Page_Up or keyval == keysyms.KP_Page_Up:
@@ -187,16 +249,34 @@ class EngineUnicodeDb(IBus.Engine):
         self.__lookup_table.clear()
         self.__pos = 0
         self.__candidates=[]
-        if preedit_len > 0:
-            words = string.split( self.__preedit_string.upper().replace('\'', '\'\''), ' ')
+        
+        if preedit_len > 2 and self.__state == 2:
+            words = string.split( self.__preedit_string[2:].upper().replace('\'', '\'\''), ' ')
+            
+            ## intersection of exact word matches
             subqueries = [];
-            query = 'SELECT character_desc.character, desc FROM character_desc INNER JOIN ('
+            query = 'SELECT character_desc.character, desc FROM character_desc INNER JOIN ( select * from ('
             
             for word in words:
-                subqueries += [ 'SELECT character FROM character_word WHERE word = \'' + word + '\'' ]
-            
+                subq = 'SELECT character FROM character_word WHERE word = \'' + word + '\'';
+                subqueries += [ subq ]
+           
             query += string.join( subqueries, ' INTERSECT ')
-            query += ')  AS chrs ON character_desc.character = chrs.character';
+            
+            ## intersection of UNION matches
+            subqueries = [];
+            for word in words:
+                if len(word) >= 3: # allow for fuzzy matching
+                    subq = 'SELECT character FROM character_word WHERE word LIKE \'' + word + '%\'';
+                    subqueries += [ subq ]
+                else:
+                    subq = 'SELECT character FROM character_word WHERE word = \'' + word + '\'';
+                    subqueries += [ subq ]
+            
+            if len(subqueries) > 0:
+                query += ')  UNION select * from (' + string.join( subqueries, ' INTERSECT ')
+            
+            query += ')) AS chrs ON character_desc.character = chrs.character';
             
             print query;
         
@@ -210,10 +290,12 @@ class EngineUnicodeDb(IBus.Engine):
             
             for candidate in self.__candidates[0:10]:
                 self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
+        elif preedit_len > 1 and (self.__state == 1 or self.__state == 3):
+            pass
                 
         text = IBus.Text.new_from_string(self.__preedit_string)
         text.set_attributes(attrs)
-        self.update_auxiliary_text(text, preedit_len > 0)
+        self.update_auxiliary_text(text, self.__state == 2 and preedit_len > 0)
 
         attrs.append(IBus.Attribute.new(IBus.AttrType.UNDERLINE,
                 IBus.AttrUnderline.SINGLE, 0, preedit_len))
@@ -222,11 +304,15 @@ class EngineUnicodeDb(IBus.Engine):
         self.update_preedit_text(text, preedit_len, preedit_len > 0)
         self.__update_lookup_table()
         self.__is_invalidate = False
+        
 
     def __update_lookup_table(self):
-        visible = self.__lookup_table.get_number_of_candidates() > 0
-        self.update_lookup_table(self.__lookup_table, visible)
-
+        if self.__state == 2:
+            visible = self.__lookup_table.get_number_of_candidates() > 0
+            self.update_lookup_table(self.__lookup_table, visible)
+        else:
+            print 'hiding the lookup table?'
+            self.hide_lookup_table()
 
     def do_focus_in(self):
         print "focus_in"
