@@ -82,8 +82,9 @@ AC_CONFIG_FILES(po/Makefile.in
 Makefile
 ibus-tmpl.spec
 engine/Makefile
-engine/ibus-engine-enchant
-engine/enchant-python.xml.in
+engine/ibus-engine-unicode-db
+engine/unicode-db-python.xml.in
+engine/dataparse.py.in
 icons/Makefile
 m4/Makefile
 data/Makefile

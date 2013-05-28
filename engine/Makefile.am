@@ -18,16 +18,16 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-engine_enchant_PYTHON = \
+engine_unicode_db_PYTHON = \
 	engine.py \
 	main.py \
 	dataparse.py \
 	$(NULL)
-engine_enchantdir = $(datadir)/ibus-tmpl
+engine_unicode_dbdir = $(datadir)/ibus-unicode-db
 
-bin_SCRIPTS = ibus-engine-enchant
+bin_SCRIPTS = ibus-engine-unicode-db
 
-component_DATA = enchant-python.xml
+component_DATA = unicode-db-python.xml
 componentdir = $(datadir)/ibus/component
 
 CLEANFILES = \
@@ -35,11 +35,20 @@ CLEANFILES = \
 	$(NULL)
 
 EXTRA_DIST = \
-	ibus-engine-enchant.in \
-	enchant-python.xml.in.in \
+	ibus-engine-unicode-db.in \
+	unicode-db-python.xml.in.in \
 	$(NULL)
 
-enchant-python.xml: enchant-python.xml.in
+dataparse.py: dataparse.py.in
+	$(AM_V_GEN) \
+	( \
+		libexecdir=${libexecdir}; \
+		pkgdatadir=${pkgdatadir}; \
+		s=`cat $<`; \
+		eval "echo \"$${s}\""; \
+	) > $@
+
+unicode-db-python.xml: unicode-db-python.xml.in
 	$(AM_V_GEN) \
 	( \
 		libexecdir=${libexecdir}; \
