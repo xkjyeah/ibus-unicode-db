@@ -52,6 +52,9 @@ class DataParse:
         masterlist = None
         masterfuzzylist = None
     
+        ## todo: sorting policy
+        # ideally
+    
         for word in wordlist:
             (codelist, fuzzy_codelist) = self.__find_codes(word)
             if masterlist == None:

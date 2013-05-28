@@ -147,7 +147,8 @@ class EngineUnicodeDb(IBus.Engine):
 #                else:
 #                    self.__commit_string(self.__preedit_string)
 #                return False
-            elif keyval >= 49 and keyval <= 57:
+            elif keyval >= 49 and keyval <= 57 and \
+                len(self.__preedit_string) > 2:
                 #keyval >= keysyms._1 and keyval <= keysyms._9
                 index = keyval - 49 #keysyms._1
                 length = self.__lookup_table.get_number_of_candidates()
@@ -172,16 +173,11 @@ class EngineUnicodeDb(IBus.Engine):
                 return True
             elif keyval == keysyms.Left or keyval == keysyms.Right:
                 return True
-        if keyval in xrange(keysyms.a, keysyms.z + 1) or \
-            keyval in xrange(keysyms.A, keysyms.Z + 1) or \
-            keyval == keysyms.space:
+        if keyval < 128 and self.__preedit_string:
             if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK) == 0:
                 self.__preedit_string += unichr(keyval)
                 self.__invalidate()
                 return True
-        else:
-            if keyval < 128 and self.__preedit_string:
-                self.__commit_string(self.__preedit_string)
 
         return False
 
