@@ -152,7 +152,7 @@ class EngineUnicodeDb(IBus.Engine):
                 length = self.__lookup_table.get_number_of_candidates()
                 if index >= length:
                     return False
-                candidate = self.__lookup_table.get_candidate(self.__lookup_table.cursor_pos + index)
+                candidate = self.__lookup_table.get_candidate(index)
                 # commit only the first character
                 self.__state = 0
                 self.__commit_string(candidate.text.decode('utf-8')[0].encode('utf-8'))
