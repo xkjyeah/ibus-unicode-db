@@ -25,6 +25,8 @@ engine_unicode_db_PYTHON = \
 	$(NULL)
 engine_unicode_dbdir = $(datadir)/ibus-unicode-db
 
+libexec_SCRIPTS= ibus-engine-unicode-db
+
 bin_SCRIPTS = ibus-engine-unicode-db
 
 component_DATA = unicode-db-python.xml

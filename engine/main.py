@@ -34,22 +34,22 @@ from engine import EngineUnicodeDb
 
 class IMApp:
     def __init__(self, exec_by_ibus):
-        engine_name = "enchant python" if exec_by_ibus else "enchant python (debug)"
+        engine_name = "unicode-db-python" if exec_by_ibus else "unicode-db-python (debug)"
         self.__component = \
-                IBus.Component.new("org.freedesktop.IBus.EnchantPython",
-                                   "Enchant Python Component",
+                IBus.Component.new("org.freedesktop.IBus.UnicodeDb",
+                                   "Unicode Db Input Method",
                                    "0.1.0",
                                    "GPL",
-                                   "Peng Huang <shawn.p.huang@gmail.com>",
+                                   "Daniel Sim <daniel.ssq89@gmail.com>",
                                    "http://example.com",
                                    "/usr/bin/exec",
-                                   "ibus-enchant")
-        engine = IBus.EngineDesc.new("enchant-python",
+                                   "ibus-unicode-db")
+        engine = IBus.EngineDesc.new("unicode-db-python",
                                      engine_name,
-                                     "English Enchant",
+                                     "English Unicode Db",
                                      "en",
                                      "GPL",
-                                     "Peng Huang <shawn.p.huang@gmail.com>",
+                                     "Daniel Sim <daniel.ssq89@gmail.com>",
                                      "",
                                      "us")
         self.__component.add_engine(engine)
@@ -57,14 +57,14 @@ class IMApp:
         self.__bus = IBus.Bus()
         self.__bus.connect("disconnected", self.__bus_disconnected_cb)
         self.__factory = IBus.Factory.new(self.__bus.get_connection())
-        self.__factory.add_engine("enchant-python",
+        self.__factory.add_engine("unicode-db-python",
                 GObject.type_from_name("EngineUnicodeDb"))
         if exec_by_ibus:
-            self.__bus.request_name("org.freedesktop.IBus.EnchantPython", 0)
+            self.__bus.request_name("org.freedesktop.IBus.UnicodeDb", 0)
         else:
             self.__bus.register_component(self.__component)
             self.__bus.set_global_engine_async(
-                    "enchant-python", -1, None, None, None)
+                    "unicode-db-python", -1, None, None, None)
 
     def run(self):
         self.__mainloop.run()
