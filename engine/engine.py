@@ -62,7 +62,8 @@ class EngineUnicodeDb(IBus.Engine):
         ## have also been activated.
         ## even better -- we can activate on... Ctrl+Shift+U
         if self.__state == 0:
-            if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.SHIFT_MASK) != 0 and \
+            if state & IBus.ModifierType.CONTROL_MASK != 0 &&
+            state & IBus.ModifierType.SHIFT_MASK != 0 and \
                 keyval == keysyms.u or keyval == keysyms.U:
                 self.__preedit_string = 'u'
                 self.__state = 1        # ambiguous hex/desc mode
