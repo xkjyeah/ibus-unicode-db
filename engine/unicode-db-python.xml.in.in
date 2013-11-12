@@ -16,7 +16,7 @@
 			<language>en</language>
 			<license>GPL</license>
 			<author>Daniel Sim &lt;daniel.ssq89@gmail.com&gt;</author>
-			<icon>${pkgdatadir}/icons/ibus-enchant.png</icon>
+			<icon>${pkgdatadir}/icons/ibus-unicode-db.png</icon>
 			<layout>us</layout>
 			<longname>UnicodeDb</longname>
 			<description>Unicode DB Input Method</description>

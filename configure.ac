@@ -62,11 +62,7 @@ PKG_CHECK_MODULES(SQLITE3, [
     sqlite3
 ])
 
-# check enchant
-#PKG_CHECK_MODULES(ENCHANT, [
-#    enchant
-#])
-
+AC_SUBST(IBUS_DATADIR, $($PKG_CONFIG --variable=datadir ibus-1.0) )
 
 #check python
 AM_PATH_PYTHON([2.5])
