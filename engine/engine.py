@@ -45,6 +45,9 @@ class EngineUnicodeDb(IBus.Engine):
         self.__lookup_table = IBus.LookupTable.new(10, 0, True, True)
         self.__prop_list = IBus.PropList()
         self.__prop_list.append(IBus.Property(key="test", icon="ibus-local"))
+
+
+	self.__lookup_table.set_orientation(IBus.Orientation.VERTICAL)
         
         # initialize mmap
         self.__data = DataParse()

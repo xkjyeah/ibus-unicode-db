@@ -30,7 +30,7 @@ libexec_SCRIPTS= ibus-engine-unicode-db
 bin_SCRIPTS = ibus-engine-unicode-db
 
 component_DATA = unicode-db-python.xml
-componentdir = $(datadir)/ibus/component
+componentdir = @IBUS_DATADIR@/ibus/component
 
 CLEANFILES = \
 	*.pyc \
