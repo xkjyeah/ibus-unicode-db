@@ -1,17 +1,47 @@
-This is an input method (initially based off the ibus-tmpl template).
+# iBus Unicode DB
 
-You can use this input method as a short-cut to using character maps. e.g. you can type "GREEK ALPHA", and it will offer you the Unicode characters corresponding to `Greek capital letter alpha with tonos', `Greek capital letter alpha', `Greek small letter alpha' etc. It will also show you the unicode sequence.
+This is an input method that lets you search the Unicode database as you type. Something like using the character map while typing, except easier. For example, you can type the search terms "greek alpha", and it will offer you the Unicode characters corresponding to "Greek capital letter alpha with tonos", "Greek capital letter alpha", "Greek small letter alpha" etc.
 
-It is hoped that with repeated usage, the user will remember the unicode sequence rather than the description of the characters.
+This input method also shows you the unicode sequence of the characters that you type. If you ever find it easier to just memorize a frequently used character than to search for it, you can do that too!
 
-It is also hoped that this could be integrated with other input methods / keyboards. Currently iBus supports Ctrl+Shift+U <unicode sequence> to enter unicode characters. However, this only works as well as you can remember the unicode sequences. And character maps can be a pain, especially if you start to use a lot of Greek letters in your LibreOffice report (strictly speaking, you should use TeX. But, really...). If one could <Ctrl>+<Shift>+<U> <'> followed by a description, it might work a lot more nicely.
+Finally, this input method is probably most useful if integrated into other input methods / keyboards. For example, iBus currently lets users enter arbitrary unicode characters when users type Ctrl+Shift+U <unicode sequence>. However, this only works as well as you can remember the unicode sequences. And character maps can be a pain, especially if you start to use a lot of Greek letters in your documents.
 
-This project stores data in a SQLite3 database.
+Arguably you can use TeX, but in all honesty you cannot use TeX everywhere (e.g. in Google Chrome, in GEdit), so this method is better.
 
-Problems:
-- Installation doesn't really work yet, for reasons I have yet to uncover
-- engine/engine.py still refers to my home directory, because SQLite3 on Python needs write-access (oh bother)
-- UnicodeData.txt is in English! This project cannot ever be localized, can it? (e.g. 阿拉法、俄梅戛 -- Chinese for `alpha' and `omega')
-- Data currently only comes from UnicodeData.txt. Unihan, CJK radicals etc. have not been included yet.
-- Needs usage frequency tracking!
+Search sequences are activated by Ctrl+Shift+U, followed by the apostrophe (').
 
+## Installation
+
+### Step 1
+    $ git clone https://github.com/xkjyeah/ibus-unicode-db.git
+
+### Step 2
+    $ cd ibus-unicode-db
+    $ ./autogen.sh && make && sudo make install
+
+### Step 3
+
+If you are using Ubuntu 13.10 or later
+
+    $ gnome-control-center region
+
+If you are using Ubuntu 12.10 or earlier...
+
+    $ ibus-setup
+
+Then, add the "English (UnicodeDb)" input method
+
+(If you are using Ubuntu 13.04, or any other distributions, try both methods anyway)
+
+## Future work
+
+### Unihan database
+I have not included the Unihan database, but it could/should/would be helpful for non-Chinese/Japanese/Korean people looking for their favourite Chinese character.
+
+### Windows port
+A Windows port is underway at https://github.com/xkjyeah/itf-unicode-db.
+
+### Packaging into Debian...
+I need to get in touch with the right people. Or maybe you can?
+
+23 Dec 2014
