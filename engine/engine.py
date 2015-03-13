@@ -158,7 +158,7 @@ class EngineUnicodeDb(IBus.Engine):
             elif keyval >= 48 and keyval <= 57 and \
                 len(self.__preedit_string) > 2:
                 #keyval >= keysyms._1 and keyval <= keysyms._9
-                index = ((keyval - 48 + 9) % 10) + 1  # 1...9 --> 1...9, 0 --> 10
+                index = ((keyval - 48 + 9) % 10)  # 1...9 --> 0...8, 0 --> 9
                 length = self.__lookup_table.get_number_of_candidates()
                 if index >= length:
                     return False
