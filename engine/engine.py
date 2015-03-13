@@ -34,8 +34,8 @@ keysyms = IBus
 
 class EngineUnicodeDb(IBus.Engine):
     __gtype_name__ = 'EngineUnicodeDb'
-    
-    
+
+
     __state = 0   # 0 -- literal mode, 1 -- ambiguous mode, 2 -- normal mode, 3 -- hex mode
 
     def __init__(self):
@@ -48,10 +48,10 @@ class EngineUnicodeDb(IBus.Engine):
 
 
 	self.__lookup_table.set_orientation(IBus.Orientation.VERTICAL)
-        
+
         # initialize mmap
         self.__data = DataParse()
-        
+
         print "Create EngineUnicodeDb OK"
 
     def do_process_key_event(self, keyval, keycode, state):
@@ -60,7 +60,7 @@ class EngineUnicodeDb(IBus.Engine):
         is_press = ((state & IBus.ModifierType.RELEASE_MASK) == 0)
         if not is_press:
             return False
-        
+
         ## todo -- literal mode needs fixing -- must not activate when other keys
         ## have also been activated.
         ## even better -- we can activate on... Ctrl+Shift+U
@@ -71,7 +71,7 @@ class EngineUnicodeDb(IBus.Engine):
                 self.__preedit_string = 'u'
                 self.__state = 1        # ambiguous hex/desc mode
                 self.__update()
-                
+
                 return True
             return False
         elif self.__state == 1 and keyval == keysyms.apostrophe: # transition to description
@@ -90,14 +90,14 @@ class EngineUnicodeDb(IBus.Engine):
             return self.handle_hex_state( keyval, state )
         elif self.__state == 2: # description state
             return self.handle_desc_state( keyval, state )
-            
+
         return False
-            
+
     def handle_hex_state(self, keyval, state):
-    
+
         if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK) != 0:
             return False
-        
+
         if keyval == keysyms.Escape:
             self.__preedit_string = u""
             self.__state = 0
@@ -108,7 +108,7 @@ class EngineUnicodeDb(IBus.Engine):
             self.__update()
             if len(self.__preedit_string) == 0:
                 self.__state = 0
-            return True  
+            return True
         elif keyval == keysyms.Return or \
             keyval == keysyms.space: # commit the character
             self.__state = 0
@@ -119,18 +119,18 @@ class EngineUnicodeDb(IBus.Engine):
         elif (keyval >= keysyms.a and keyval <= keysyms.f) or \
             (keyval >= keysyms.A and keyval <= keysyms.F) or \
             (keyval >= 48 and keyval <= 57): # hex char
-            
+
             # if passed as a control sequence e.g. Ctrl + F
             if len(self.__preedit_string) > 8:
                 pass
             else:
-                self.__preedit_string += chr(keyval)            
+                self.__preedit_string += chr(keyval)
                 self.__update()
-            
-            return True            
-        
+
+            return True
+
         return False
-    
+
     def handle_desc_state(self, keyval, state):
         if self.__preedit_string:
             if keyval == keysyms.Return:
@@ -155,7 +155,7 @@ class EngineUnicodeDb(IBus.Engine):
 #                else:
 #                    self.__commit_string(self.__preedit_string)
 #                return False
-            elif keyval >= 49 and keyval <= 57 and \
+            elif keyval >= 48 and keyval <= 57 and \
                 len(self.__preedit_string) > 2:
                 #keyval >= keysyms._1 and keyval <= keysyms._9
                 index = keyval - 49 #keysyms._1
@@ -201,10 +201,10 @@ class EngineUnicodeDb(IBus.Engine):
             print "wait i page up"
             print self.__lookup_table.page_size
             print self.__pos
-            
-            self.__pos = max( self.__pos - self.__lookup_table.page_size, 0) 
+
+            self.__pos = max( self.__pos - self.__lookup_table.page_size, 0)
             self.__lookup_table.clear()
-            
+
             for candidate in self.__candidates[self.__pos: self.__pos + self.__lookup_table.page_size ]:
                 self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
 #            self.page_down_lookup_table()
@@ -217,10 +217,10 @@ class EngineUnicodeDb(IBus.Engine):
             print "wait i page down"
             print self.__lookup_table.page_size
             print self.__pos
-            
+
             self.__pos = min(self.__pos + self.__lookup_table.page_size, len(self.__candidates) / self.__lookup_table.page_size)
             self.__lookup_table.clear()
-            
+
             for candidate in self.__candidates[self.__pos: self.__pos + self.__lookup_table.page_size ]:
                 self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
 #            self.page_down_lookup_table()
@@ -245,34 +245,34 @@ class EngineUnicodeDb(IBus.Engine):
         self.__preedit_string = u""
         self.__update()
         self.__state = 0
-        
+
     __candidates = []
     __pos = 0
-        
+
     def __update(self):
         preedit_len = len(self.__preedit_string)
         attrs = IBus.AttrList()
         self.__lookup_table.clear()
         self.__pos = 0
         self.__candidates=[]
-        
+
         if preedit_len > 2 and self.__state == 2:
             words = string.split( self.__preedit_string[2:].strip().upper().replace('\'', '\'\''), ' ')
-            
+
             (cands, fuz_cands) = self.__data.find_candidates(words)
             sort_func = lambda x: int(x, 16)
             candidate_codes = sorted(list(cands), key=sort_func) + \
                             sorted(list(fuz_cands), key=sort_func)
-            
+
             for code in candidate_codes:
                 self.__candidates += [ unichr(int(code, 16)) + " - \\u" + code + \
                     " - " + self.__data.find_description(code) ]
-            
+
             for candidate in self.__candidates[0:10]:
                 self.__lookup_table.append_candidate(IBus.Text.new_from_string(candidate))
         elif preedit_len > 1 and (self.__state == 1 or self.__state == 3):
             pass
-                
+
         text = IBus.Text.new_from_string(self.__preedit_string)
         text.set_attributes(attrs)
         self.update_auxiliary_text(text, self.__state == 2 and preedit_len > 0)
@@ -284,7 +284,7 @@ class EngineUnicodeDb(IBus.Engine):
         self.update_preedit_text(text, preedit_len, preedit_len > 0)
         self.__update_lookup_table()
         self.__is_invalidate = False
-        
+
 
     def __update_lookup_table(self):
         if self.__state == 2:
@@ -306,5 +306,5 @@ class EngineUnicodeDb(IBus.Engine):
 
     def do_property_activate(self, prop_name):
         print "PropertyActivate(%s)" % prop_name
-        
-        
+
+
