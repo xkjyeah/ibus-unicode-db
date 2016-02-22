@@ -1,5 +1,7 @@
 # iBus Unicode DB
 
+[Video demo](https://www.youtube.com/watch?v=4VavXqD-nXs)
+
 This is an input method that lets you search the Unicode database as you type. Something like using the character map while typing, except easier. For example, you can type the search terms "greek alpha", and it will offer you the Unicode characters corresponding to "Greek capital letter alpha with tonos", "Greek capital letter alpha", "Greek small letter alpha" etc.
 
 This input method also shows you the unicode sequence of the characters that you type. If you ever find it easier to just memorize a frequently used character than to search for it, you can do that too!
