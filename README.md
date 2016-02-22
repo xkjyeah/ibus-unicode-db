@@ -4,7 +4,9 @@ This is an input method that lets you search the Unicode database as you type. S
 
 This input method also shows you the unicode sequence of the characters that you type. If you ever find it easier to just memorize a frequently used character than to search for it, you can do that too!
 
-Finally, this input method is probably most useful if integrated into other input methods / keyboards. For example, iBus currently lets users enter arbitrary unicode characters when users type Ctrl+Shift+U <unicode sequence>. However, this only works as well as you can remember the unicode sequences. And character maps can be a pain, especially if you start to use a lot of Greek letters in your documents.
+Finally, this input method is probably most useful if integrated into other input methods / keyboards.
+For example, iBus currently lets users enter arbitrary unicode characters when users type `Ctrl+Shift+U &lt;unicode sequence>.`
+However, this only works as well as you can remember the unicode sequences. And character maps can be a pain, especially if you start to use a lot of Greek letters in your documents.
 
 Arguably you can use TeX, but in all honesty you cannot use TeX everywhere (e.g. in Google Chrome, in GEdit), so this method is better.
 
@@ -40,8 +42,5 @@ I have not included the Unihan database, but it could/should/would be helpful fo
 
 ### Windows port
 A Windows port is underway at https://github.com/xkjyeah/itf-unicode-db.
-
-### Packaging into Debian...
-I need to get in touch with the right people. Or maybe you can?
 
 23 Dec 2014
